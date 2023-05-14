@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/redis/go-redis/v9/internal/cmds"
 	"net"
 	"sync/atomic"
 	"time"
@@ -185,6 +186,7 @@ func (hs *hooksMixin) processTxPipelineHook(ctx context.Context, cmds []Cmder) e
 type baseClient struct {
 	opt      *Options
 	connPool pool.Pooler
+	builder  *cmds.Builder
 
 	onClose func() error // hook called when client is closed
 }
@@ -604,7 +606,8 @@ func NewClient(opt *Options) *Client {
 
 	c := Client{
 		baseClient: &baseClient{
-			opt: opt,
+			opt:     opt,
+			builder: cmds.NewBuilder(cmds.InitSlot),
 		},
 	}
 	c.init()
@@ -641,6 +644,16 @@ func (c *Client) Do(ctx context.Context, args ...interface{}) *Cmd {
 	return cmd
 }
 
+func (c *Client) Run(ctx context.Context, args []string) *Cmd {
+	a := make([]interface{}, len(args))
+	for i := range args {
+		a[i] = args[i]
+	}
+	cmd := NewCmd(ctx, a...)
+	_ = c.Process(ctx, cmd)
+	return cmd
+}
+
 func (c *Client) Process(ctx context.Context, cmd Cmder) error {
 	err := c.processHook(ctx, cmd)
 	cmd.SetErr(err)
@@ -650,6 +663,10 @@ func (c *Client) Process(ctx context.Context, cmd Cmder) error {
 // Options returns read-only Options that were used to create the client.
 func (c *Client) Options() *Options {
 	return c.opt
+}
+
+func (c *Client) B() *cmds.Builder {
+	return c.builder
 }
 
 type PoolStats pool.Stats
