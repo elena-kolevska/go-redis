@@ -186,7 +186,7 @@ func (hs *hooksMixin) processTxPipelineHook(ctx context.Context, cmds []Cmder) e
 type baseClient struct {
 	opt      *Options
 	connPool pool.Pooler
-	builder  *cmds.Builder
+	builder  cmds.Builder
 
 	onClose func() error // hook called when client is closed
 }
@@ -606,8 +606,7 @@ func NewClient(opt *Options) *Client {
 
 	c := Client{
 		baseClient: &baseClient{
-			opt:     opt,
-			builder: cmds.NewBuilder(cmds.InitSlot),
+			opt: opt,
 		},
 	}
 	c.init()
@@ -665,7 +664,7 @@ func (c *Client) Options() *Options {
 	return c.opt
 }
 
-func (c *Client) B() *cmds.Builder {
+func (c *Client) B() cmds.Builder {
 	return c.builder
 }
 
