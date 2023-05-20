@@ -14,16 +14,16 @@ func main() {
 
 	ctx := context.Background()
 
-	cmd1 := rdb.B().BfAdd().Key("key").Item("element").Build()
-	r1, err := rdb.Run(ctx, cmd1.GetArgs()).Result()
+	args1 := rdb.B().BfAdd().Key("key").Item("element").GetArgs()
+	r1, err := rdb.Do(ctx, args1...).Result()
 	if err != nil {
 		panic(err)
 	}
 
 	fmt.Println(r1)
 
-	cmd2 := rdb.B().BfExists().Key("key").Item("element").Build()
-	r2, err := rdb.Run(ctx, cmd2.GetArgs()).Result()
+	args2 := rdb.B().BfExists().Key("key").Item("element").GetArgs()
+	r2, err := rdb.Do(ctx, args2...).Result()
 	if err != nil {
 		panic(err)
 	}
