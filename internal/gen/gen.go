@@ -32,7 +32,9 @@ type buildDef struct {
 
 func (d buildDef) hash() uint32 {
 	hash := crc32.NewIEEE()
-	gob.NewEncoder(hash).Encode(d)
+	if err := gob.NewEncoder(hash).Encode(d); err != nil {
+		panic(err)
+	}
 	return hash.Sum32()
 }
 
