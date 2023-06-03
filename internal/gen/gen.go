@@ -135,7 +135,7 @@ func (n *node) GoStructs() (out []goStruct) {
 					s.BuildDef.Parameters = []parameter{
 						{Name: "algo", Type: "string"},
 						{Name: "nargs", Type: "integer"},
-						{Name: "args", Type: "...string"},
+						{Name: "args", Type: "...interface{}"},
 					}
 				} else {
 					s.BuildDef.Command = append(s.BuildDef.Command, cmds...)
@@ -161,7 +161,7 @@ func (n *node) GoStructs() (out []goStruct) {
 						s.FullName = strings.TrimRight(s.FullName, "Label1")
 						s.BuildDef.MethodName = strings.TrimRight(s.BuildDef.MethodName, "Label1")
 						s.BuildDef.Command = append(s.BuildDef.Command, cmds[0])
-						s.BuildDef.Parameters = []parameter{{Name: "labels", Type: "[]string"}}
+						s.BuildDef.Parameters = []parameter{{Name: "labels", Type: "[]interface{}"}}
 					}
 				default:
 					panic("unknown enum " + cmds[1])
@@ -489,8 +489,8 @@ func testParams(defs []parameter) string {
 	var params []string
 	for _, param := range defs {
 		switch toGoType(param.Type) {
-		case "[]string":
-			params = append(params, `[]string{"1"}`)
+		case "[]interface{}":
+			params = append(params, `[]interface{}{"1"}`)
 		case "interface{}":
 			params = append(params, `"1"`)
 		case "int64", "uint64", "float64":
@@ -578,10 +578,10 @@ func allOptional(s *node, nodes []*node) bool {
 
 func toGoType(paramType string) string {
 	switch paramType {
-	case "[]string": // TODO hack for TS.MRANGE, TS.MREVRANGE, TS.MGET
-		return "[]string"
-	case "...string": // TODO hack for FT.CREATE VECTOR
-		return "...string"
+	case "[]interface{}": // TODO hack for TS.MRANGE, TS.MREVRANGE, TS.MGET
+		return "[]interface{}"
+	case "...interface{}": // TODO hack for FT.CREATE VECTOR
+		return "...interface{}"
 	case "key", "string", "pattern", "type":
 		return "interface{}"
 	case "double":
@@ -707,9 +707,9 @@ func printBuilder(w io.Writer, parent, next goStruct) {
 						appends = append(appends, fmt.Sprintf("strconv.FormatUint(%s, 10)", toGoName(p.Name)))
 					case "interface{}":
 						appends = append(appends, toGoName(p.Name))
-					case "[]string": // TODO hack for TS.MRANGE, TS.MREVRANGE, TS.MGET
+					case "[]interface{}": // TODO hack for TS.MRANGE, TS.MREVRANGE, TS.MGET
 						follows = append(follows, toGoName(p.Name)+"...")
-					case "...string": // TODO hack for FT.CREATE VECTOR
+					case "...interface{}": // TODO hack for FT.CREATE VECTOR
 						follows = append(follows, toGoName(p.Name)+"...")
 					default:
 						panic("unexpected param type " + next.BuildDef.Parameters[0].Type)
