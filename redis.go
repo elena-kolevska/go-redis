@@ -648,16 +648,6 @@ func (c *Client) Do(ctx context.Context, args ...interface{}) *Cmd {
 	return cmd
 }
 
-func (c *Client) Run(ctx context.Context, args []string) *Cmd {
-	a := make([]interface{}, len(args))
-	for i := range args {
-		a[i] = args[i]
-	}
-	cmd := NewCmd(ctx, a...)
-	_ = c.Process(ctx, cmd)
-	return cmd
-}
-
 func (c *Client) Process(ctx context.Context, cmd Cmder) error {
 	err := c.processHook(ctx, cmd)
 	cmd.SetErr(err)
