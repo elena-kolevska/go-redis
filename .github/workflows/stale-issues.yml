@@ -7,12 +7,12 @@ on:
 
 env:
   # Default stale policy timeframes
-  DAYS_BEFORE_STALE: 365
-  DAYS_BEFORE_CLOSE: 30
+  DAYS_BEFORE_STALE: 1
+  DAYS_BEFORE_CLOSE: 3
 
   # Accelerated timeline for needs-information issues
-  NEEDS_INFO_DAYS_BEFORE_STALE: 30
-  NEEDS_INFO_DAYS_BEFORE_CLOSE: 7
+  NEEDS_INFO_DAYS_BEFORE_STALE: 1
+  NEEDS_INFO_DAYS_BEFORE_CLOSE: 2
 
 jobs:
   stale:
