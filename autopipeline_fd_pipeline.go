@@ -44,13 +44,21 @@ var ErrFDPipelineUnavailable = errors.New(
 
 // ErrFDPipelineDiverts is returned when a batch contains a command the engine
 // cannot stream (blocking, per-command read timeout, runs-outside-pipeline,
-// HIMPORT, or one the caller's own mustDivert rejects). Such a command has to
+// HIMPORT, or one the routing callback rejects). Such a command has to
 // leave the pipe, which would break the batch's contiguity, so the whole call is
 // refused instead of being silently split. A NoRetry command (e.g. RawWriteTo)
 // is refused too: it makes the batch unreplayable as a unit, which the pipe's
 // per-command recovery cannot honor.
 var ErrFDPipelineDiverts = errors.New(
 	"redis: FDPipelined got a command that must be diverted off the full-duplex pipe")
+
+// ErrFDPipelineSpansEngines is returned when FullDuplexPipes > 1 runs several
+// full-duplex engines (pipes) and the batch's keyed commands hash to different ones.
+// The batch can only ride one wire, and keeping per-first-key order needs each
+// command on its own key's engine, so it is refused rather than split.
+// Pipeline() falls back to an ordinary pipeline for such a batch.
+var ErrFDPipelineSpansEngines = errors.New(
+	"redis: FDPipelined batch has keys on different full-duplex engines")
 
 // FDPipelined submits cmds as one contiguous batch on the full-duplex
 // connection and blocks until every reply has landed. It returns the first
@@ -232,9 +240,13 @@ func (ap *AutoPipeliner) fdPipelined(ctx context.Context, cmds []Cmder) (fdPipeR
 		if cmd == nil {
 			return fdPipeResult{}, ErrFDPipelineDiverts
 		}
+		if ap.routeCommand != nil {
+			if divert, err := ap.routeCommand(ctx, cmd); divert || err != nil {
+				return fdPipeResult{}, ErrFDPipelineDiverts
+			}
+		}
 		if cmd.readTimeout() != nil || runsOutsidePipeline(cmd.Name()) ||
-			isBlockingCmd(cmd) || isHImportCmd(cmd) ||
-			(ap.mustDivert != nil && ap.mustDivert(ctx, cmd)) {
+			isBlockingCmd(cmd) || isHImportCmd(cmd) {
 			return fdPipeResult{}, ErrFDPipelineDiverts
 		}
 		// A NoRetry command makes the whole batch unreplayable: an ordinary
@@ -246,7 +258,16 @@ func (ap *AutoPipeliner) fdPipelined(ctx context.Context, cmds []Cmder) (fdPipeR
 			return fdPipeResult{}, ErrFDPipelineDiverts
 		}
 	}
-	batches, err := ap.fd.submitBatch(ctx, cmds)
+	// The WHOLE batch goes to ONE engine: a pipeline split across engines would
+	// lose its internal order, which is the one thing a pipeline guarantees. That
+	// engine must also be the one every keyed command hashes to, or a command
+	// could run ahead of an earlier, unawaited command for the same key on that
+	// key's engine. A batch that spans engines is refused.
+	e, ok := ap.fdForBatch(cmds)
+	if !ok {
+		return fdPipeResult{}, ErrFDPipelineSpansEngines
+	}
+	batches, err := e.submitBatch(ctx, cmds)
 	if err != nil {
 		return fdPipeResult{}, err
 	}
