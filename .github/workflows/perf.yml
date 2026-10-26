@@ -1,4 +1,4 @@
-name: perf
+name: perf scenarios
 
 on:
   pull_request:
