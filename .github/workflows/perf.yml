@@ -13,9 +13,9 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
-    uses: elena-kolevska/cae-perf-framework/.github/workflows/reusable-bench.yml@impl/framework
+    uses: elena-kolevska/cae-perf-framework/.github/workflows/reusable-bench.yml@main
     with:
-      bench-version: impl/framework
+      bench-version: main
       target: perf/app
       config: perf/bench.yaml
       rounds: 5
