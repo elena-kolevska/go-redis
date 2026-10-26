@@ -1,0 +1,25 @@
+name: perf
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      baseline-ref:
+        description: Tag or SHA to compare against
+        default: v9.23.0
+
+jobs:
+  perf:
+    permissions:
+      contents: read
+      pull-requests: write
+    uses: redis-developer/cae-perf-framework/.github/workflows/reusable-bench.yml@impl/framework
+    with:
+      bench-version: impl/framework
+      target: perf/app
+      config: perf/bench.yaml
+      rounds: 5
+      redis-version: "8.10.0"
+      run-type: ${{ github.event_name == 'pull_request' && 'pr' || 'main' }}
+      baseline-ref: ${{ inputs.baseline-ref }}
+      required: false

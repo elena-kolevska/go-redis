@@ -1,0 +1,33 @@
+contract: 1
+name: goredis
+library:
+  name: go-redis
+  version: v9.23.0
+redis:
+  url: ${BENCH_REDIS_URL:-redis://localhost:6379}
+run:
+  warmup_s: 1
+  duration_s: 3
+  iterations: 5
+  timeout_s: 300
+app:
+  autopipeline: false
+  concurrency: 64
+  key_space: 1000
+  payload_bytes: 64
+  hash_fields: 10
+scenarios:
+  set: {}
+  get: {}
+  hset: {}
+  hget: {}
+  hgetall: {}
+labels:
+  suite: goredis
+  run_type: local
+thresholds:
+  default: 5%
+  latency_p50_ms: 10%
+  latency_p95_ms: 10%
+  latency_p99_ms: 10%
+  errors: 0
